@@ -121,6 +121,9 @@
   (add-hook 'after-init-hook 'dimmer-mode)
   ;; TODO: file upstream as a PR
   (after-load 'dimmer
+    ;; Exclude magit buffers to prevent "wrong-type-argument listp default" error
+    ;; This is a known issue with dimmer + magit-delta interaction
+    (setq dimmer-buffer-exclusion-regexps '("^magit.*" "^\\*Messages\\*"))
     (advice-add 'frame-set-background-mode :after (lambda (&rest args) (dimmer-process-all)))))
 
 
