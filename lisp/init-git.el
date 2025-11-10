@@ -30,17 +30,23 @@
 (when (straight-use-package 'magit)
   (setq-default magit-diff-refine-hunk t)
 
-  ;; Smart delta integration: use magit-delta if delta CLI is available
-  (if (executable-find "delta")
-      (when (straight-use-package 'magit-delta)
-        (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
-        (setq magit-delta-default-dark-theme "Dracula")
-        (setq magit-delta-default-light-theme "GitHub"))
-    ;; Fallback: Enable enhanced built-in syntax highlighting
+  ;; Helper function to enable fallback diff highlighting
+  (defun kyle/magit-enable-fallback-highlighting ()
+    "Enable enhanced built-in magit diff highlighting."
     (setq magit-diff-paint-whitespace t
           magit-diff-highlight-trailing t
           magit-diff-refine-ignore-whitespace nil
           magit-diff-highlight-hunk-body t))
+
+  ;; Smart delta integration: use magit-delta if delta CLI is available
+  (if (executable-find "delta")
+      (when (straight-use-package 'magit-delta)
+        (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
+        (setq magit-delta-arguments '("--navigate" "--softwrap"))
+        (setq magit-delta-default-dark-theme "Dracula")
+        (setq magit-delta-default-light-theme "GitHub"))
+    ;; Fallback: Enable enhanced built-in syntax highlighting
+    (kyle/magit-enable-fallback-highlighting))
 
   ;; Hint: customize `magit-repository-directories' so that you can use C-u M-F12 to
   ;; quickly open magit on any one of your projects.
@@ -82,6 +88,32 @@ This runs 'git reset --soft HEAD~1'."
   ;; Add the command to Magit's transient system so it appears in help menu
   (transient-append-suffix 'magit-dispatch "X"
     '("M-u" "Undo last commit (soft)" kyle/magit-undo-last-commit)))
+
+;; Interactive command to toggle between magit-delta and fallback mode
+(defun kyle/toggle-magit-delta ()
+  "Toggle between magit-delta mode and fallback diff highlighting.
+When magit-delta is active, disable it and enable fallback highlighting.
+When using fallback mode, enable magit-delta if available."
+  (interactive)
+  (if (and (boundp 'magit-delta-mode) magit-delta-mode)
+      ;; Currently using delta, switch to fallback
+      (progn
+        (magit-delta-mode -1)
+        (kyle/magit-enable-fallback-highlighting)
+        (message "Switched to magit fallback diff highlighting"))
+    ;; Currently using fallback, try to switch to delta
+    (if (and (executable-find "delta")
+             (featurep 'magit-delta))
+        (progn
+          (magit-delta-mode +1)
+          (message "Switched to magit-delta mode"))
+      (message "Delta not available. Install delta CLI and magit-delta package.")))
+  ;; Refresh magit buffers to show the change
+  (when (derived-mode-p 'magit-mode)
+    (magit-refresh)))
+
+(after-load 'magit
+  (global-set-key (kbd "C-c g d") 'kyle/toggle-magit-delta))
 
 (straight-use-package 'magit-todos)
 
