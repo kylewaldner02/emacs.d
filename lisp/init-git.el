@@ -87,7 +87,17 @@ This runs 'git reset --soft HEAD~1'."
 
   ;; Add the command to Magit's transient system so it appears in help menu
   (transient-append-suffix 'magit-dispatch "X"
-    '("M-u" "Undo last commit (soft)" kyle/magit-undo-last-commit)))
+    '("M-u" "Undo last commit (soft)" kyle/magit-undo-last-commit))
+
+  ;; Auto-replace spaces with hyphens when creating branch names
+  (defun kyle/magit-insert-hyphen ()
+    "Insert a hyphen instead of a space in branch names."
+    (interactive)
+    (insert "-"))
+
+  ;; Override the magit keymap to insert hyphens instead of blocking spaces
+  (define-key magit-minibuffer-local-ns-map (kbd "SPC") 'kyle/magit-insert-hyphen)
+  (define-key magit-minibuffer-local-ns-map (kbd "TAB") 'kyle/magit-insert-hyphen))
 
 ;; Interactive command to toggle between magit-delta and fallback mode
 (defun kyle/toggle-magit-delta ()
